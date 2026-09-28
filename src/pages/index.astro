@@ -102,4 +102,47 @@ const freeCount = spaces.reduce(
       </tbody>
     </table>
   </div>
+  <p id="live-status" class="sr-only" role="status"></p>
 </Layout>
+
+<script>
+  // The live half: every booking and cancellation anywhere arrives over the
+  // SSE stream, and a cell on this grid flips without a reload. The grid is
+  // complete without this — it's rendered from the database on every load.
+  const table = document.querySelector<HTMLTableElement>("table.grid");
+  const status = document.querySelector("#live-status");
+  const count = document.querySelector("#free-count");
+  const hourLabel = (h: number) => `${String(h).padStart(2, "0")}:00`;
+
+  type SlotEvent = { type: "booked" | "cancelled"; library: string; space: string; date: string; hour: number };
+
+  if (table) {
+    const { library, date } = table.dataset;
+    new EventSource("/api/events").addEventListener("message", (e) => {
+      const ev: SlotEvent = JSON.parse(e.data);
+      if (ev.library !== library || ev.date !== date) return;
+      const cell = table.querySelector<HTMLTableCellElement>(`td[data-space="${ev.space}"][data-hour="${ev.hour}"]`);
+      if (!cell || cell.classList.contains("past")) return;
+      const name = cell.parentElement?.querySelector(".space-name")?.textContent ?? "";
+
+      if (ev.type === "booked" && cell.classList.contains("free")) {
+        cell.className = "booked";
+        cell.innerHTML = "<span>Booked</span>";
+        if (count) count.textContent = String(Number(count.textContent) - 1);
+      } else if (ev.type === "cancelled" && cell.classList.contains("booked")) {
+        const q = new URLSearchParams({ space: ev.space, date: ev.date, hour: String(ev.hour) });
+        const link = document.createElement("a");
+        link.href = `/book/?${q}`;
+        link.innerHTML = `Free<span class="sr-only"></span>`;
+        link.querySelector("span")!.textContent = `: book ${name} at ${hourLabel(ev.hour)}`;
+        cell.className = "free";
+        cell.replaceChildren(link);
+        if (count) count.textContent = String(Number(count.textContent) + 1);
+      } else return;
+
+      cell.classList.add("changed");
+      if (status)
+        status.textContent = `${name} at ${hourLabel(ev.hour)} was just ${ev.type === "booked" ? "booked" : "freed up"}.`;
+    });
+  }
+</script>

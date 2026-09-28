@@ -282,3 +282,21 @@ button {
 .bookings form {
   margin: 0;
 }
+
+/* a cell that just changed over the live stream gets a brief highlight */
+.grid td.changed {
+  animation: flash 2s ease-out;
+}
+
+@keyframes flash {
+  from {
+    box-shadow: inset 0 0 0 3px var(--link);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grid td.changed {
+    animation: none;
+    box-shadow: inset 0 0 0 2px var(--link);
+  }
+}

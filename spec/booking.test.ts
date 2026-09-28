@@ -130,3 +130,74 @@ describe("cancelling", () => {
     expect(await cell("Chifley", date, "chifley-gr-4", 16)).toBe("booked");
   });
 });
+
+describe("racing", () => {
+  it("gives a contested slot to exactly one of many simultaneous requests", async () => {
+    const date = inDays(8);
+    const uids = ["u2000001", "u2000002", "u2000003", "u2000004", "u2000005", "u2000006"];
+    const results = await Promise.all(uids.map((uid) => book("menzies-gr-3", date, 13, uid)));
+    const winners = results.filter((r) => reasonOf(r) === null);
+    expect(winners).toHaveLength(1);
+    for (const r of results.filter((r) => reasonOf(r) !== null)) expect(reasonOf(r)).toMatch(/just been booked/);
+  });
+});
+
+describe("live updates", () => {
+  // Subscribe to the stream, act, then read until the matching event arrives.
+  const expectEvent = async (act: () => Promise<unknown>, match: Record<string, unknown>) => {
+    const stream = await fetch(new URL("/api/events", baseUrl));
+    expect(stream.headers.get("content-type")).toContain("text/event-stream");
+    const reader = stream.body?.getReader();
+    if (!reader) throw new Error("no response body");
+    await act();
+
+    const decoder = new TextDecoder();
+    let buffer = "";
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) throw new Error("stream ended before the event arrived");
+        buffer += decoder.decode(value, { stream: true });
+        for (const line of buffer.split("\n")) {
+          if (!line.startsWith("data: ")) continue;
+          const event = JSON.parse(line.slice(6));
+          if (Object.entries(match).every(([k, v]) => event[k] === v)) return event;
+        }
+      }
+    } finally {
+      await reader.cancel();
+    }
+  };
+
+  it("broadcasts a booking to every open grid", async () => {
+    const date = inDays(9);
+    const event = await expectEvent(() => book("hancock-gr-2", date, 9, "u3000001"), {
+      type: "booked",
+      space: "hancock-gr-2",
+      date,
+      hour: 9,
+    });
+    expect(event.library).toBe("Hancock");
+  }, 10_000);
+
+  it("broadcasts a cancellation so the slot shows free again", async () => {
+    const date = inDays(10);
+    await book("hancock-gr-2", date, 10, "u3000002");
+    const id = (await get("/my/?uid=u3000002")).match(/name="id" value="(\d+)"/)?.[1] ?? "";
+    await expectEvent(() => post("/api/cancel", { id, uid: "u3000002" }), {
+      type: "cancelled",
+      space: "hancock-gr-2",
+      date,
+      hour: 10,
+    });
+  }, 10_000);
+
+  it("never broadcasts who booked", async () => {
+    const date = inDays(11);
+    const event = await expectEvent(() => book("hancock-gr-3", date, 11, "u3000003", "Private Person"), {
+      space: "hancock-gr-3",
+      date,
+    });
+    expect(JSON.stringify(event)).not.toMatch(/u3000003|Private Person/);
+  }, 10_000);
+});
