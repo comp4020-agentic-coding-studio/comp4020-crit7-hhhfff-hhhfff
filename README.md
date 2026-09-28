@@ -1,18 +1,27 @@
-# Your prototype
+# ANU Library study-space booking
 
-<!-- TEMPLATE: this file is yours, and the deployed app publishes it in full at
-     /readme/ --- a visitor reads it before they touch the app, and so does the
-     marker. Replace everything in it, this comment included. -->
-
-What this is, in a paragraph: the thing, and what it's for.
+Book a group study room or a quiet seat in an ANU library by the hour, see at
+a glance what is free right now, and cancel what you no longer need. One grid
+per library per day: rooms down the side, hours across the top, every free
+cell is a link that books it.
 
 ## What good looks like here
 
-Say what good means for this app: what you decided, what you read or looked at
-while deciding, and what you chose not to build. The rules that decision
-produced live in `CLAUDE.md` and the checks that protect it live in `spec/`;
-this is the argument they came from, so say which parts of good are enforced and
-which are judgement calls.
+Finding a study room at ANU today means opening a separate booking system,
+picking a library, then clicking through rooms one at a time to find a free
+hour. The thing I wish existed is one page that answers "where can I sit at
+2pm in Chifley?" in a single glance and books it in one step.
 
-Images go in `public/` and are linked relatively --- `![alt](public/before.png)`
---- which renders on GitHub and at `/readme/` alike.
+Good, for this app, means:
+
+- **Truthful availability.** The grid shows what the database holds, and a
+  slot someone else has just taken disappears from every open grid without a
+  reload.
+- **No double bookings, ever.** Two people racing for the same room get one
+  booking and one clear refusal. This is enforced by the database itself.
+- **Fair rules, stated up front.** One-hour slots between 08:00 and 22:00
+  Canberra time, up to 7 days ahead, at most 2 hours per person per day.
+- **Works for everyone.** Every page works without JavaScript, by keyboard,
+  on a phone, and never says "free" or "taken" by colour alone.
+
+_Draft — completed as the stages land._
