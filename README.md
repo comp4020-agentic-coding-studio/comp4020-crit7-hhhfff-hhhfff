@@ -20,7 +20,8 @@ Good, for this app, means:
 - **No double bookings, ever.** Two people racing for the same room get one
   booking and one clear refusal. This is enforced by the database itself.
 - **Fair rules, stated up front.** One-hour slots between 08:00 and 22:00
-  Canberra time, up to 7 days ahead, at most 2 hours per person per day.
+  Canberra time, up to 14 days ahead, at most 2 hours per person per day —
+  the last two are ANU Library's own rules for group study rooms.
 - **Works for everyone.** Every page works without JavaScript, by keyboard,
   on a phone, and never says "free" or "taken" by colour alone.
 

@@ -25,7 +25,8 @@ good looks like and why; these are the rules that follow from it.
 ## Booking rules (enforced on the server, never only in the browser)
 
 - One-hour slots, 08:00–22:00, Canberra time (`Australia/Sydney`).
-- Bookable from today up to 7 days ahead; no past slots.
+- Bookable from today up to 14 days ahead (ANU Library's own rule); an hour
+  already over cannot be booked, the hour in progress can.
 - At most 2 hours per uID per day. uID format: `u` + 7 digits.
 - Every rejection returns the user to the form with a plain-English reason and
   changes nothing in the database.
