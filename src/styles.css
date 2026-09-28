@@ -196,6 +196,8 @@ button {
 
 .grid th,
 .grid td {
+  /* keeps each cell's screen-reader label inside the scroll container */
+  position: relative;
   border-top: 1px solid var(--line);
   padding: 0.35rem;
   text-align: center;
@@ -208,6 +210,13 @@ button {
   left: 0;
   background: #fff;
   min-width: 10rem;
+}
+
+@media (max-width: 40rem) {
+  .grid th[scope="row"] {
+    min-width: 7.5rem;
+    white-space: normal;
+  }
 }
 
 .space-name {

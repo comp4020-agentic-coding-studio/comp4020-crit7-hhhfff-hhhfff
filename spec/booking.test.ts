@@ -44,6 +44,19 @@ describe("spaces", () => {
   });
 });
 
+describe("the grid", () => {
+  it("says every cell's status in words, not colour alone, and labels every free link", async () => {
+    await book("chifley-desk-1", inDays(1), 8, "u4000001");
+    const html = await get(`/?library=Chifley&date=${inDays(1)}`);
+    const cells = [...html.matchAll(/<td class="(\w+)"[^>]*>([\s\S]*?)<\/td>/g)];
+    expect(cells.length).toBe(8 * 14);
+    const word = { free: "Free", booked: "Booked", past: "Past" } as Record<string, string>;
+    for (const [, state, inner] of cells) expect(inner).toContain(word[state]);
+    // a screen reader hears which room and hour each Free link books
+    expect(html).toMatch(/Free<span class="sr-only"[^>]*>: book Group Room 1 at 08:00<\/span>/);
+  });
+});
+
 describe("booking", () => {
   it("books a free slot, sends you to My bookings, and survives a reload", async () => {
     const date = inDays(1);
