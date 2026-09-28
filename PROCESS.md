@@ -1,54 +1,68 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
-Written by you, for a reader: how you got from the brief to the harness and
-agentic workflow behind this submission. Markers read this file and follow its
-citations; they don't trawl the repo for evidence you didn't point at.
-
-This file is the shape; the course site's
-[assessment page](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#what-you-submit)
-is the requirement, and its
-[word counts](https://comp.anu.edu.au/courses/comp4020-agentic-coding-studio/topics/assessment/#word-counts)
-cover every deliverable.
-
 ## What I built
 
-A sentence or two. `README.md` is where the account of what the app is and what
-good means here lives; this file is how you got there.
+A booking app for ANU Library study rooms and seats: one grid per library per
+day, book a free hour in one step, cancel from My bookings, and every open
+grid updates live. `README.md` says what good means here and why.
 
 ## How I got here
 
-The account of the process: how the work actually went, and how you knew the
-result was right. Tell it in whatever order makes it clear. A weekly prototype
-needs a paragraph or two; an assignment needs more.
+I started from the brief ("the ANU system you wish existed") and picked
+library room booking because it is a real, daily annoyance with clear rules I
+could check against ANU Library's own pages. In the first session I had the
+agent read the brief, spec and starter, then agree a plan with me before any
+code: the slice, the data model, the booking rules, and seven stages, each
+ending in a green `pnpm check` and a commit. The plan was saved to the agent's
+memory so the build could resume in a new session once my Fly token was in
+place. The second session opened with:
 
-Cite the record as you go, as links whose text is the commit hash or range and
-whose target is this repo's commit or compare URL, so a reader clicks straight
-to the evidence:
+> fly token已经完成配置，请从持久记忆查看上一次对话的crit7的记忆并开始执行，每完成一个阶段就自动commit一下，同时更新specification
+>
+> (The Fly token is configured; read last session's crit 7 memory and start
+> executing, commit automatically after each stage, and update the spec as
+> you go.)
 
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
+The first commit is the harness, not code:
+[`767ad3a`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-hhhfff-hhhfff/commit/767ad3a)
+writes the rules into `CLAUDE.md` — schema changes only through
+`schema.ts` and a generated migration, every page in `spec/routes.ts`, every
+form usable without JavaScript, booking rules enforced on the server, tests
+and README updated in the same commit as the behaviour they describe.
 
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
+Then the data layer,
+[`5871b43`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-hhhfff-hhhfff/commit/5871b43).
+Two things changed here from the plan. Checking ANU's live booking page
+showed the window is two weeks, not the 7 days I had planned, so the rule
+became 14 days. And drizzle-kit would not generate the migration
+non-interactively because it wanted to ask whether `messages` had been
+renamed, so the agent split it into a drop migration and a create migration
+rather than hand-editing SQL. Double booking is refused by a unique index,
+not just a check in code.
 
-> the prompt, verbatim
+The core flow,
+[`85a6db8`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-hhhfff-hhhfff/commit/85a6db8),
+landed with its contracts in `spec/booking.test.ts`, driven over HTTP against
+the built server. The first deploy,
+[`c00debd`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-hhhfff-hhhfff/commit/c00debd),
+was verified by hand with curl: book, reload, restart the machine, and the
+booking was still there. The live grid and the race and broadcast contracts
+came next in
+[`2dec3c5`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-hhhfff-hhhfff/commit/2dec3c5).
 
-Screenshots are welcome where one carries the point better than a sentence does.
-Commit the file to this repo and link it with a **relative** path, which is what
-makes it render on GitHub: `![alt text](docs/before.png)`. Images don't count
-towards the word count and don't replace the citation.
+The tests were green throughout, but they could not see layout. A pass in a
+real browser with 360px emulation,
+[`618f7a8`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-hhhfff-hhhfff/commit/618f7a8),
+found the grid page was 966px wide on a phone: the screen-reader labels in
+each cell were absolutely positioned and escaped the scroll container. Same
+pass confirmed a booking made through the form in one tab flipped the cell in
+another. That is the gap the README names between what `spec/` enforces and
+what I judged by hand.
 
-## Before you ship
+One slip worth recording: once the agent committed after running a single
+test file against a stale build instead of the full `pnpm check`. It re-ran
+the full suite straight after and the commit was green, but it is exactly
+the kind of shortcut the "green before commit" rule exists to stop.
 
-`pnpm check:evidence` verifies that this comment is gone, that your citations
-resolve to real commits, that a crit week's reflection entry is in
-`reflections/`, and that your `CLAUDE.md` is there. It checks that your account
-is traceable, not that it is good: that is the marker's call.
-
-Images aren't checked: unlike a citation whose SHA doesn't resolve, a broken
-image is visible the moment this file is rendered on GitHub.
+The whole build:
+[`767ad3a...618f7a8`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-hhhfff-hhhfff/compare/767ad3a...618f7a8).
