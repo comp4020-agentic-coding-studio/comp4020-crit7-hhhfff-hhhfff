@@ -1,0 +1,86 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getSpace, takenSlots } from "../../lib/db";
+import { readBooker, withQuery } from "../../lib/flash";
+import { MAX_HOURS_PER_DAY, slotOpen } from "../../lib/rules";
+import { formatDate, formatHour } from "../../lib/time";
+
+// Confirm one slot: who's booking it. Arrived at from a free grid cell, or
+// sent back here by /api/bookings with the reason a booking was refused.
+const params = Astro.url.searchParams;
+const space = getSpace(params.get("space") ?? "");
+const date = params.get("date") ?? "";
+const hour = Number(params.get("hour"));
+const error = params.get("error");
+const booker = readBooker(Astro.cookies);
+
+const open = space !== undefined && Number.isInteger(hour) && slotOpen(date, hour);
+const taken = open && takenSlots(space.library, date).has(`${space.slug}@${hour}`);
+const gridLink = space ? withQuery("/", { library: space.library, date }) : "/";
+---
+
+<Layout title="Book a space">
+  <h1>Book a space</h1>
+  {
+    error && (
+      <p class="notice error" role="alert">
+        <strong>Not booked.</strong> {error}
+      </p>
+    )
+  }
+  {
+    !open || !space ? (
+      <p>
+        That slot can't be booked. <a href={gridLink}>Pick a free hour from the grid</a>.
+      </p>
+    ) : taken ? (
+      <p>
+        {space.name} at {formatHour(hour)} is already booked. <a href={gridLink}>Pick another free hour</a>.
+      </p>
+    ) : (
+      <>
+        <dl class="summary">
+          <dt>Space</dt>
+          <dd>
+            {space.name}, {space.library} Library
+          </dd>
+          <dt>When</dt>
+          <dd>
+            {formatDate(date)}, {formatHour(hour)}–{formatHour(hour + 1)}
+          </dd>
+          <dt>Size</dt>
+          <dd>{space.kind === "group" ? `Group room for up to ${space.capacity}` : "Single seat"}</dd>
+          {space.features && (
+            <>
+              <dt>Has</dt>
+              <dd>{space.features}</dd>
+            </>
+          )}
+        </dl>
+        <form method="post" action="/api/bookings" class="stack">
+          <input type="hidden" name="space" value={space.slug} />
+          <input type="hidden" name="date" value={date} />
+          <input type="hidden" name="hour" value={hour} />
+          <label for="uid">ANU uID</label>
+          <input
+            id="uid"
+            name="uid"
+            required
+            pattern="[uU][0-9]{7}"
+            autocomplete="username"
+            aria-describedby="uid-hint"
+            value={booker.uid}
+          />
+          <p id="uid-hint" class="hint">A u followed by 7 digits, like u1234567.</p>
+          <label for="name">Your name</label>
+          <input id="name" name="name" required maxlength="80" autocomplete="name" value={booker.name} />
+          <p class="hint">Up to {MAX_HOURS_PER_DAY} hours per person per day.</p>
+          <button>Book {formatHour(hour)}</button>
+        </form>
+        <p>
+          <a href={gridLink}>Back to the grid</a>
+        </p>
+      </>
+    )
+  }
+</Layout>

@@ -1,0 +1,84 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { bookingsForUid } from "../../lib/db";
+import { readBooker } from "../../lib/flash";
+import { normaliseUid, slotOpen, UID_PATTERN } from "../../lib/rules";
+import { canberraNow, formatDate, formatHour } from "../../lib/time";
+
+// Your upcoming bookings, found by uID (from the query, else the cookie set
+// when you last booked), each with a cancel button.
+const params = Astro.url.searchParams;
+const uid = normaliseUid(params.get("uid") ?? readBooker(Astro.cookies).uid);
+const known = UID_PATTERN.test(uid);
+const mine = known
+  ? bookingsForUid(uid, canberraNow().date).filter((b) => slotOpen(b.date, b.hour))
+  : [];
+const booked = Number(params.get("booked"));
+const cancelled = params.get("cancelled");
+const error = params.get("error");
+const justBooked = mine.find((b) => b.id === booked);
+---
+
+<Layout title="My bookings">
+  <h1>My bookings</h1>
+  {
+    justBooked && (
+      <p class="notice ok" role="status">
+        <strong>Booked.</strong> {justBooked.space.name}, {justBooked.space.library} Library,{" "}
+        {formatDate(justBooked.date)} at {formatHour(justBooked.hour)}.
+      </p>
+    )
+  }
+  {
+    cancelled && (
+      <p class="notice ok" role="status">
+        <strong>Cancelled.</strong> The slot is free for others again.
+      </p>
+    )
+  }
+  {
+    error && (
+      <p class="notice error" role="alert">
+        <strong>Not cancelled.</strong> {error}
+      </p>
+    )
+  }
+
+  <form method="get" action="/my/" class="day-picker">
+    <label for="uid">uID</label>
+    <input id="uid" name="uid" required pattern="[uU][0-9]{7}" value={uid} autocomplete="username" />
+    <button>Show bookings</button>
+  </form>
+
+  {
+    !known ? (
+      <p>Enter your uID to see your bookings.</p>
+    ) : mine.length === 0 ? (
+      <p>
+        No upcoming bookings for {uid}. <a href="/">Find a space</a>.
+      </p>
+    ) : (
+      <ul class="bookings">
+        {mine.map((b) => (
+          <li>
+            <div>
+              <strong>
+                {formatDate(b.date)}, {formatHour(b.hour)}–{formatHour(b.hour + 1)}
+              </strong>
+              <span>
+                {b.space.name}, {b.space.library} Library
+              </span>
+            </div>
+            <form method="post" action="/api/cancel">
+              <input type="hidden" name="id" value={b.id} />
+              <input type="hidden" name="uid" value={uid} />
+              <button aria-label={`Cancel ${b.space.name} on ${formatDate(b.date)} at ${formatHour(b.hour)}`}>
+                Cancel
+              </button>
+            </form>
+          </li>
+        ))}
+      </ul>
+    )
+  }
+</Layout>

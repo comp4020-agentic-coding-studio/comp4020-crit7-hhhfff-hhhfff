@@ -1,24 +1,105 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { listLibraries, listSpaces } from "../lib/db";
+import { listLibraries, listSpaces, takenSlots } from "../lib/db";
+import { withQuery } from "../lib/flash";
+import { bookableDates, HOURS, MAX_HOURS_PER_DAY, slotOpen } from "../lib/rules";
+import { formatDate, formatHour } from "../lib/time";
 
+// The grid: one library, one day, spaces down the side and hours across.
+// Every free cell is a link to book it.
 const libraries = listLibraries();
+const dates = bookableDates();
+const params = Astro.url.searchParams;
+const pick = (value: string | null, options: string[]) =>
+  value && options.includes(value) ? value : options[0];
+const library = pick(params.get("library"), libraries);
+const date = pick(params.get("date"), dates);
+
+const spaces = listSpaces(library);
+const taken = takenSlots(library, date);
+const state = (slug: string, hour: number) =>
+  taken.has(`${slug}@${hour}`) ? "booked" : slotOpen(date, hour) ? "free" : "past";
+const freeCount = spaces.reduce(
+  (n, s) => n + HOURS.filter((h) => state(s.slug, h) === "free").length,
+  0,
+);
 ---
 
-<Layout title="Find a space">
+<Layout title={`${library} · ${formatDate(date)}`}>
   <h1>Find a study space</h1>
-  {
-    libraries.map((library) => (
-      <section>
-        <h2>{library} Library</h2>
-        <ul>
-          {listSpaces(library).map((s) => (
-            <li>
-              {s.name} — {s.kind === "group" ? `group room, ${s.capacity} people` : "single seat"}
-            </li>
-          ))}
-        </ul>
-      </section>
-    ))
-  }
+  <p class="lede">
+    Pick a library and a day, then choose a free hour. Bookings are one hour each, up to
+    {MAX_HOURS_PER_DAY} hours per person per day.
+  </p>
+
+  <nav aria-label="libraries" class="tabs">
+    {
+      libraries.map((l) => (
+        <a href={withQuery("/", { library: l, date })} aria-current={l === library ? "page" : undefined}>
+          {l}
+        </a>
+      ))
+    }
+  </nav>
+
+  <form method="get" action="/" class="day-picker">
+    <input type="hidden" name="library" value={library} />
+    <label for="date">Day</label>
+    <select id="date" name="date">
+      {
+        dates.map((d, i) => (
+          <option value={d} selected={d === date}>
+            {i === 0 ? `Today, ${formatDate(d)}` : formatDate(d)}
+          </option>
+        ))
+      }
+    </select>
+    <button>Show</button>
+  </form>
+
+  <p id="summary">
+    <strong id="free-count">{freeCount}</strong> free hours in {library} on {formatDate(date)}.
+  </p>
+
+  <div class="grid-wrap" role="region" aria-labelledby="grid-caption" tabindex="0">
+    <table class="grid" data-library={library} data-date={date}>
+      <caption id="grid-caption">{library} Library, {formatDate(date)}</caption>
+      <thead>
+        <tr>
+          <th scope="col">Space</th>
+          {HOURS.map((h) => <th scope="col">{formatHour(h)}</th>)}
+        </tr>
+      </thead>
+      <tbody>
+        {
+          spaces.map((s) => (
+            <tr>
+              <th scope="row">
+                <span class="space-name">{s.name}</span>
+                <span class="space-meta">
+                  {s.kind === "group" ? `Group room · ${s.capacity} people` : "Single seat"}
+                </span>
+              </th>
+              {HOURS.map((h) => {
+                const st = state(s.slug, h);
+                return (
+                  <td class={st} data-space={s.slug} data-hour={h}>
+                    {st === "free" ? (
+                      <a href={withQuery("/book/", { space: s.slug, date, hour: h })}>
+                        Free<span class="sr-only">: book {s.name} at {formatHour(h)}</span>
+                      </a>
+                    ) : st === "booked" ? (
+                      <span>Booked</span>
+                    ) : (
+                      <span>Past</span>
+                    )}
+                  </td>
+                );
+              })}
+            </tr>
+          ))
+        }
+      </tbody>
+    </table>
+  </div>
 </Layout>

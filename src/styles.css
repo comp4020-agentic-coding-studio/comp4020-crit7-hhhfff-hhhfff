@@ -1,40 +1,284 @@
-body {
-  margin: 0;
-  padding: 2rem;
-  font-family: system-ui, sans-serif;
-  line-height: 1.6;
-  color: #1a1a1a;
+:root {
+  --ink: #1a1a1a;
+  --muted: #555;
+  --line: #d0d4da;
+  --link: #0b4fd6;
+  --free-bg: #e7f5ea;
+  --free-ink: #14532d;
+  --booked-bg: #f1f1f1;
+  --booked-ink: #595959;
+  --ok-bg: #e7f5ea;
+  --error-bg: #fdecea;
+  --error-ink: #8a1c10;
 }
 
-main {
-  max-width: 40rem;
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+  color: var(--ink);
+  background: #fff;
+}
+
+header {
+  border-bottom: 1px solid var(--line);
+  padding: 0.75rem 1rem;
+}
+
+header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  align-items: center;
+  max-width: 72rem;
   margin: 0 auto;
 }
 
+.brand {
+  font-weight: 700;
+  margin-inline-end: auto;
+}
+
+main {
+  max-width: 72rem;
+  margin: 0 auto;
+  padding: 1rem;
+}
+
+article {
+  max-width: 44rem;
+}
+
 a {
-  color: #0b5fff;
+  color: var(--link);
+}
+
+a[aria-current="page"] {
+  font-weight: 700;
+  text-decoration-thickness: 3px;
+}
+
+:focus-visible {
+  outline: 3px solid var(--link);
+  outline-offset: 2px;
+}
+
+.skip {
+  position: absolute;
+  left: -999px;
+}
+
+.skip:focus {
+  left: 1rem;
+  top: 0.5rem;
+  background: #fff;
+  padding: 0.25rem 0.5rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.lede {
+  color: var(--muted);
+  max-width: 44rem;
+}
+
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-block: 1rem;
+}
+
+.tabs a {
+  padding: 0.4rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.tabs a[aria-current="page"] {
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
 }
 
 form {
+  margin-block: 1rem;
+}
+
+.day-picker {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
   align-items: center;
-  margin-block: 1.5rem;
 }
 
-input {
-  flex: 1;
-  min-width: 12rem;
-  padding: 0.4rem 0.6rem;
+.stack {
+  display: grid;
+  gap: 0.35rem;
+  max-width: 24rem;
+}
+
+.stack button {
+  margin-top: 0.75rem;
+  justify-self: start;
+}
+
+label {
+  font-weight: 600;
+}
+
+input,
+select,
+button {
   font: inherit;
+  padding: 0.45rem 0.7rem;
+  border: 1px solid #767676;
+  border-radius: 4px;
 }
 
 button {
-  padding: 0.4rem 1rem;
-  font: inherit;
+  background: var(--ink);
+  color: #fff;
+  border-color: var(--ink);
+  cursor: pointer;
 }
 
-#messages {
-  padding-inline-start: 1.2rem;
+.hint {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.notice {
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  max-width: 44rem;
+}
+
+.notice.ok {
+  background: var(--ok-bg);
+}
+
+.notice.error {
+  background: var(--error-bg);
+  color: var(--error-ink);
+}
+
+.grid-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+}
+
+.grid {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+}
+
+.grid caption {
+  text-align: start;
+  font-weight: 700;
+  padding: 0.6rem 0.75rem;
+}
+
+.grid th,
+.grid td {
+  border-top: 1px solid var(--line);
+  padding: 0.35rem;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.grid th[scope="row"] {
+  text-align: start;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  min-width: 10rem;
+}
+
+.space-name {
+  display: block;
+}
+
+.space-meta {
+  display: block;
+  font-weight: 400;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.grid td.free {
+  background: var(--free-bg);
+}
+
+.grid td.free a {
+  display: block;
+  color: var(--free-ink);
+  font-weight: 600;
+  padding: 0.35rem 0.25rem;
+}
+
+.grid td.booked {
+  background: var(--booked-bg);
+  color: var(--booked-ink);
+}
+
+.grid td.booked span::before {
+  content: "✕ ";
+}
+
+.grid td.past {
+  color: var(--booked-ink);
+}
+
+.summary {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 0.25rem 1rem;
+}
+
+.summary dt {
+  font-weight: 600;
+}
+
+.summary dd {
+  margin: 0;
+}
+
+.bookings {
+  list-style: none;
+  padding: 0;
+  max-width: 44rem;
+}
+
+.bookings li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.bookings li div {
+  display: grid;
+}
+
+.bookings form {
+  margin: 0;
 }

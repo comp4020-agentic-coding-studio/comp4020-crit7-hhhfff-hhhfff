@@ -5,6 +5,21 @@ a glance what is free right now, and cancel what you no longer need. One grid
 per library per day: rooms down the side, hours across the top, every free
 cell is a link that books it.
 
+## Using it
+
+1. **Find a space** — choose Chifley, Hancock or Menzies and a day. The grid
+   marks every hour Free, Booked (✕) or Past.
+2. **Book** — select a Free cell, enter your uID and name, press Book. You
+   land on My bookings with a confirmation; if the slot was taken meanwhile or
+   a rule stops you, you're sent back with the reason and nothing is saved.
+3. **My bookings** — lists your upcoming bookings (your uID is remembered in
+   a cookie) with a Cancel button for each; a cancelled hour is free again at
+   once.
+
+There is no login: your uID is self-declared, so anyone who knows it could
+cancel your booking. A real version would sign in through ANU's identity
+system.
+
 ## What good looks like here
 
 Finding a study room at ANU today means opening a separate booking system,
