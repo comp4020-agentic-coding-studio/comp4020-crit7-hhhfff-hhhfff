@@ -5,6 +5,8 @@ a glance what is free right now, and cancel what you no longer need. One grid
 per library per day: rooms down the side, hours across the top, every free
 cell is a link that books it.
 
+Live at <https://comp4020-crit7-hhhfff-hhhfff.fly.dev/>.
+
 ## Using it
 
 1. **Find a space** — choose Chifley, Hancock or Menzies and a day. The grid
