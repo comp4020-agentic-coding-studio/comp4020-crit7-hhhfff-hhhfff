@@ -20,7 +20,17 @@ const gridLink = space ? withQuery("/", { library: space.library, date }) : "/";
 ---
 
 <Layout title="Book a space">
-  <h1>Book a space</h1>
+  <Fragment slot="head">
+    <p class="eyebrow">{space ? `${space.library} Library` : "ANU Library"}</p>
+    <h1>Book a space</h1>
+    {
+      open && space && !taken && (
+        <p class="lede">
+          {space.name} · {formatDate(date)} · {formatHour(hour)}–{formatHour(hour + 1)}
+        </p>
+      )
+    }
+  </Fragment>
   {
     error && (
       <p class="notice error" role="alert">
@@ -38,8 +48,8 @@ const gridLink = space ? withQuery("/", { library: space.library, date }) : "/";
         {space.name} at {formatHour(hour)} is already booked. <a href={gridLink}>Pick another free hour</a>.
       </p>
     ) : (
-      <>
-        <dl class="summary">
+      <div class="book-layout">
+        <dl class="summary card">
           <dt>Space</dt>
           <dd>
             {space.name}, {space.library} Library
@@ -57,7 +67,7 @@ const gridLink = space ? withQuery("/", { library: space.library, date }) : "/";
             </>
           )}
         </dl>
-        <form method="post" action="/api/bookings" class="stack">
+        <form method="post" action="/api/bookings" class="stack card">
           <input type="hidden" name="space" value={space.slug} />
           <input type="hidden" name="date" value={date} />
           <input type="hidden" name="hour" value={hour} />
@@ -77,10 +87,10 @@ const gridLink = space ? withQuery("/", { library: space.library, date }) : "/";
           <p class="hint">Up to {MAX_HOURS_PER_DAY} hours per person per day.</p>
           <button>Book {formatHour(hour)}</button>
         </form>
-        <p>
-          <a href={gridLink}>Back to the grid</a>
+        <p class="back">
+          <a href={gridLink}>← Back to the grid</a>
         </p>
-      </>
+      </div>
     )
   }
 </Layout>

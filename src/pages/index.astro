@@ -1,9 +1,9 @@
 ---
 import Layout from "../layouts/Layout.astro";
-import { listLibraries, listSpaces, takenSlots } from "../lib/db";
+import { listLibraries, listSpaces, takenSlots, type Space } from "../lib/db";
 import { withQuery } from "../lib/flash";
 import { bookableDates, HOURS, MAX_HOURS_PER_DAY, slotOpen } from "../lib/rules";
-import { formatDate, formatHour } from "../lib/time";
+import { canberraNow, formatDate, formatHour } from "../lib/time";
 
 // The grid: one library, one day, spaces down the side and hours across.
 // Every free cell is a link to book it.
@@ -19,43 +19,97 @@ const spaces = listSpaces(library);
 const taken = takenSlots(library, date);
 const state = (slug: string, hour: number) =>
   taken.has(`${slug}@${hour}`) ? "booked" : slotOpen(date, hour) ? "free" : "past";
-const freeCount = spaces.reduce(
-  (n, s) => n + HOURS.filter((h) => state(s.slug, h) === "free").length,
-  0,
-);
+const freeIn = (s: Space) => HOURS.filter((h) => state(s.slug, h) === "free").length;
+const openIn = (s: Space) => HOURS.filter((h) => state(s.slug, h) !== "past").length;
+const freeCount = spaces.reduce((n, s) => n + freeIn(s), 0);
+// The hour in progress, if the grid is showing today: its column gets a marker.
+const now = canberraNow();
+const nowHour = date === now.date ? now.hour : -1;
+// Each library's block in the 3D header has its own height, just for character.
+const blockHeight: Record<string, number> = { Chifley: 46, Hancock: 58, Menzies: 38 };
+
+// The day in three parts; free tiles warm to cool across it, like daylight.
+const periods = [
+  { key: "morning", label: "Morning", hours: HOURS.filter((h) => h < 12) },
+  { key: "afternoon", label: "Afternoon", hours: HOURS.filter((h) => h >= 12 && h < 17) },
+  { key: "evening", label: "Evening", hours: HOURS.filter((h) => h >= 17) },
+];
+const periodOf = (h: number) => periods.find((p) => p.hours.includes(h))!.key;
+
+// Rooms and seats as two sections, each space with an icon for what it is
+// and its equipment as chips; a caveat ("no power outlets") gets a warning.
+const sections = [
+  { kind: "group", label: "Group rooms", rows: spaces.filter((s) => s.kind === "group") },
+  { kind: "seat", label: "Single seats", rows: spaces.filter((s) => s.kind === "seat") },
+].filter((g) => g.rows.length > 0);
+const iconOf = (s: Space) =>
+  s.kind === "group" ? "people" : /PC/.test(s.features) ? "desk" : "booth";
+const chipsOf = (s: Space) =>
+  s.features
+    .split(",")
+    .map((f) => f.trim())
+    .filter(Boolean)
+    .map((f) => ({ text: f[0].toUpperCase() + f.slice(1), caution: /^(no|not) /i.test(f) }));
+let row = 0;
 ---
 
 <Layout title={`${library} · ${formatDate(date)}`}>
-  <h1>Find a study space</h1>
-  <p class="lede">
-    Pick a library and a day, then choose a free hour. Bookings are one hour each, up to {MAX_HOURS_PER_DAY} hours
-    per person per day.
-  </p>
+  <Fragment slot="head">
+    <p class="eyebrow">Chifley · Hancock · Menzies</p>
+    <h1>Find a study space</h1>
+    <p class="lede">
+      Pick a library and a day, then choose a free hour. Bookings are one hour each, up to {MAX_HOURS_PER_DAY} hours
+      per person per day.
+    </p>
 
-  <nav aria-label="libraries" class="tabs">
-    {
-      libraries.map((l) => (
-        <a href={withQuery("/", { library: l, date })} aria-current={l === library ? "page" : undefined}>
-          {l}
-        </a>
-      ))
-    }
-  </nav>
-
-  <form method="get" action="/" class="day-picker">
-    <input type="hidden" name="library" value={library} />
-    <label for="date">Day</label>
-    <select id="date" name="date">
+    <nav aria-label="libraries" class="libraries">
       {
-        dates.map((d, i) => (
-          <option value={d} selected={d === date}>
-            {i === 0 ? `Today, ${formatDate(d)}` : formatDate(d)}
-          </option>
+        libraries.map((l, i) => (
+          <a
+            class="lib"
+            href={withQuery("/", { library: l, date })}
+            aria-current={l === library ? "page" : undefined}
+            style={`--h: ${blockHeight[l] ?? 44}px; --i: ${i}`}
+          >
+            <span class="scene" aria-hidden="true">
+              <span class="iso">
+                <span class="ground" />
+                <span class="cube">
+                  <span class="face front" />
+                  <span class="face side" />
+                </span>
+              </span>
+            </span>
+            <span class="lib-name">{l}</span>
+            <span class="lib-meta">{listSpaces(l).length} spaces</span>
+          </a>
         ))
       }
-    </select>
-    <button>Show</button>
-  </form>
+    </nav>
+  </Fragment>
+
+  <div class="toolbar">
+    <form method="get" action="/" class="day-picker">
+      <input type="hidden" name="library" value={library} />
+      <label for="date">Day</label>
+      <select id="date" name="date">
+        {
+          dates.map((d, i) => (
+            <option value={d} selected={d === date}>
+              {i === 0 ? `Today, ${formatDate(d)}` : formatDate(d)}
+            </option>
+          ))
+        }
+      </select>
+      <button>Show</button>
+    </form>
+    <ul class="legend" aria-label="Key">
+      <li><span class="key free" aria-hidden="true">Free</span> Bookable</li>
+      <li><span class="key booked" aria-hidden="true">✕</span> Booked</li>
+      <li><span class="key past" aria-hidden="true">–</span> Past</li>
+      {nowHour >= 0 && <li><span class="key now" aria-hidden="true" /> Now</li>}
+    </ul>
+  </div>
 
   <p id="summary">
     <strong id="free-count">{freeCount}</strong> free hours in {library} on {formatDate(date)}.
@@ -64,42 +118,105 @@ const freeCount = spaces.reduce(
   <div class="grid-wrap" role="region" aria-labelledby="grid-caption" tabindex="0">
     <table class="grid" data-library={library} data-date={date}>
       <caption id="grid-caption">{library} Library, {formatDate(date)}</caption>
+      <colgroup><col /></colgroup>
+      {periods.map((p) => <colgroup span={p.hours.length} />)}
       <thead>
+        <tr class="periods">
+          <td></td>
+          {
+            periods.map((p) => (
+              <th scope="colgroup" colspan={p.hours.length} class={`period ${p.key}`}>
+                <span class="period-icon" aria-hidden="true" />
+                {p.label}
+              </th>
+            ))
+          }
+        </tr>
         <tr>
           <th scope="col">Space</th>
-          {HOURS.map((h) => <th scope="col">{formatHour(h)}</th>)}
+          {
+            HOURS.map((h) =>
+              h === nowHour ? (
+                <th scope="col" class="now">
+                  {formatHour(h)}
+                  <span class="sr-only"> (now)</span>
+                </th>
+              ) : (
+                <th scope="col">{formatHour(h)}</th>
+              ),
+            )
+          }
         </tr>
       </thead>
-      <tbody>
-        {
-          spaces.map((s) => (
-            <tr>
-              <th scope="row">
-                <span class="space-name">{s.name}</span>
-                <span class="space-meta">
-                  {s.kind === "group" ? `Group room · ${s.capacity} people` : "Single seat"}
+      {
+        sections.map((g) => (
+          <tbody>
+            <tr class="section">
+              <th scope="rowgroup" colspan={HOURS.length + 1}>
+                <span>
+                  {g.label} <span class="section-count">{g.rows.length}</span>
                 </span>
               </th>
-              {HOURS.map((h) => {
-                const st = state(s.slug, h);
-                return (
-                  <td class={st} data-space={s.slug} data-hour={h}>
-                    {st === "free" ? (
-                      <a href={withQuery("/book/", { space: s.slug, date, hour: h })}>
-                        Free<span class="sr-only">: book {s.name} at {formatHour(h)}</span>
-                      </a>
-                    ) : st === "booked" ? (
-                      <span>Booked</span>
-                    ) : (
-                      <span>Past</span>
-                    )}
-                  </td>
-                );
-              })}
             </tr>
-          ))
-        }
-      </tbody>
+            {g.rows.map((s) => {
+              const open = openIn(s);
+              const free = freeIn(s);
+              return (
+                <tr style={`--i: ${row++}`}>
+                  <th scope="row">
+                    <span class="space-head">
+                      <span class={`space-icon ${iconOf(s)}`} aria-hidden="true" />
+                      <span class="space-text">
+                        <span class="space-name">{s.name}</span>
+                        <span class="space-meta">
+                          <span>{s.kind === "group" ? `${s.capacity} people` : "1 seat"}</span>
+                          {chipsOf(s).map((c) => (
+                            <span class:list={["chip", { caution: c.caution }]}>
+                              {c.caution && <span aria-hidden="true">⚠ </span>}
+                              {c.text}
+                            </span>
+                          ))}
+                        </span>
+                        <span class="row-free" data-open={open}>
+                          <span class="meter" aria-hidden="true">
+                            <span style={`--p: ${open ? free / open : 0}`} />
+                          </span>
+                          <span>
+                            <span class="row-free-n">{free}</span> of {open} left
+                          </span>
+                        </span>
+                      </span>
+                    </span>
+                  </th>
+                  {HOURS.map((h) => {
+                    const st = state(s.slug, h);
+                    return (
+                      <td
+                        class={st}
+                        data-space={s.slug}
+                        data-hour={h}
+                        data-label={formatHour(h)}
+                        data-period={periodOf(h)}
+                        data-now={h === nowHour ? "" : undefined}
+                      >
+                        {st === "free" ? (
+                          <a href={withQuery("/book/", { space: s.slug, date, hour: h })}>
+                            Free<span class="sr-only">: book {s.name} at {formatHour(h)}</span>
+                          </a>
+                        ) : st === "booked" ? (
+                          <span>Booked</span>
+                        ) : (
+                          <span>Past</span>
+                        )}
+                      </td>
+                    );
+                  })}
+                </tr>
+              );
+            })}
+          </tbody>
+        ))
+      }
     </table>
   </div>
   <p id="live-status" class="sr-only" role="status"></p>
@@ -116,6 +233,18 @@ const freeCount = spaces.reduce(
 
   type SlotEvent = { type: "booked" | "cancelled"; library: string; space: string; date: string; hour: number };
 
+  // keep a row's "n of m left" and its meter in step with its cells
+  const bump = (cell: HTMLElement, by: number) => {
+    if (count) count.textContent = String(Number(count.textContent) + by);
+    const rowFree = cell.parentElement?.querySelector<HTMLElement>(".row-free");
+    const n = rowFree?.querySelector(".row-free-n");
+    const bar = rowFree?.querySelector<HTMLElement>(".meter > span");
+    if (!rowFree || !n || !bar) return;
+    const free = Number(n.textContent) + by;
+    n.textContent = String(free);
+    bar.style.setProperty("--p", String(free / Math.max(1, Number(rowFree.dataset.open))));
+  };
+
   if (table) {
     const { library, date } = table.dataset;
     new EventSource("/api/events").addEventListener("message", (e) => {
@@ -128,7 +257,7 @@ const freeCount = spaces.reduce(
       if (ev.type === "booked" && cell.classList.contains("free")) {
         cell.className = "booked";
         cell.innerHTML = "<span>Booked</span>";
-        if (count) count.textContent = String(Number(count.textContent) - 1);
+        bump(cell, -1);
       } else if (ev.type === "cancelled" && cell.classList.contains("booked")) {
         const q = new URLSearchParams({ space: ev.space, date: ev.date, hour: String(ev.hour) });
         const link = document.createElement("a");
@@ -137,9 +266,10 @@ const freeCount = spaces.reduce(
         link.querySelector("span")!.textContent = `: book ${name} at ${hourLabel(ev.hour)}`;
         cell.className = "free";
         cell.replaceChildren(link);
-        if (count) count.textContent = String(Number(count.textContent) + 1);
+        bump(cell, 1);
       } else return;
 
+      // .changed plays the press-down (booked) or lift-up (freed) animation
       cell.classList.add("changed");
       if (status)
         status.textContent = `${name} at ${hourLabel(ev.hour)} was just ${ev.type === "booked" ? "booked" : "freed up"}.`;

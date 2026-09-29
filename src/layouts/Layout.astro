@@ -1,4 +1,6 @@
 ---
+import "@fontsource-variable/fraunces";
+import "@fontsource-variable/inter";
 import "../styles.css";
 
 interface Props {
@@ -11,6 +13,9 @@ const links = [
   { href: "/my/", label: "My bookings" },
   { href: "/readme/", label: "About" },
 ];
+// Pages put their heading in the "head" slot, which sits on the dark band;
+// the default slot is the light sheet that lifts over the band's edge.
+const hasHead = Astro.slots.has("head");
 ---
 
 <!doctype html>
@@ -18,24 +23,40 @@ const links = [
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#0e1a2b" />
     <title>{title} · ANU Library spaces</title>
   </head>
   <body>
     <a class="skip" href="#main">Skip to content</a>
-    <header>
+    <header class="site">
       <nav aria-label="site">
-        <span class="brand">ANU Library spaces</span>
-        {
-          links.map((l) => (
-            <a href={l.href} aria-current={path === l.href ? "page" : undefined}>
-              {l.label}
-            </a>
-          ))
-        }
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span>ANU Library <em>spaces</em></span>
+        </a>
+        <div class="site-links">
+          {
+            links.map((l) => (
+              <a href={l.href} aria-current={path === l.href ? "page" : undefined}>
+                {l.label}
+              </a>
+            ))
+          }
+        </div>
       </nav>
     </header>
     <main id="main">
-      <slot />
+      <section class:list={["band", { slim: !hasHead }]}>
+        <div class="band-inner">
+          <slot name="head" />
+        </div>
+      </section>
+      <div class="sheet">
+        <slot />
+      </div>
     </main>
+    <footer class="site-foot">
+      <p>Australian National University · Canberra time (AEST/AEDT) · Bookable up to 14 days ahead</p>
+    </footer>
   </body>
 </html>

@@ -1,27 +1,34 @@
 # ANU Library study-space booking
 
-Book a group study room or a quiet seat in an ANU library by the hour, see at
-a glance what is free right now, and cancel what you no longer need. One grid
-per library per day: rooms down the side, hours across the top, every free
-cell is a link that books it.
+Every study room and quiet seat across three ANU libraries, on one page. See
+at a glance what is free right now, book an hour in a single step, and hand it
+back when your plans change. One grid per library per day: rooms down the
+side, hours across the top, and every free cell is a link that books it.
 
 Live at <https://comp4020-crit7-hhhfff-hhhfff.fly.dev/>.
 
-![The Chifley grid on a phone: free hours are links, booked hours are marked with a cross and the word Booked](public/grid-mobile.png)
+- **3** libraries
+- **15** bookable spaces
+- **14** days ahead
+- **2** hours per person per day
+
+![The app on a phone: the three libraries as small 3D buildings with Chifley picked in gold, then the Chifley grid, one card per room with its equipment and hours left today; free hours are raised tiles marked with a dot and the word Free, tinted warm to cool from morning to evening; booked hours are pressed-in tiles marked with a cross and the word Booked](public/grid-phone.png)
 
 ## Using it
 
-1. **Find a space** — choose Chifley, Hancock or Menzies and a day. The grid
-   marks every hour Free, Booked (✕) or Past.
-2. **Book** — select a Free cell, enter your uID and name, press Book. You
+1. **Find a space.** Choose Chifley, Hancock or Menzies and a day. The grid
+   marks every hour Free, Booked (✕) or Past, split into morning, afternoon
+   and evening. Group rooms and single seats are listed apart, each with its
+   equipment, any access caveat (⚠), and how many of the day's hours are left.
+2. **Book.** Select a Free cell, enter your uID and name, press Book. You
    land on My bookings with a confirmation; if the slot was taken meanwhile or
    a rule stops you, you're sent back with the reason and nothing is saved.
-3. **My bookings** — lists your upcoming bookings (your uID is remembered in
+3. **My bookings.** Lists your upcoming bookings (your uID is remembered in
    a cookie) with a Cancel button for each; a cancelled hour is free again at
    once.
 
-Keep the grid open in two tabs and book in one: the other tab's cell flips to
-Booked without a reload.
+The grid is live: keep it open in two tabs and book in one, and the other
+tab's cell presses down to Booked without a reload.
 
 There is no login: your uID is self-declared, so anyone who knows it could
 cancel your booking. A real version would sign in through ANU's identity
@@ -30,9 +37,9 @@ system.
 ## What good looks like here
 
 Finding a study room at ANU today means opening a separate booking system,
-picking a library, then clicking through rooms to find a free hour. The thing
-I wish existed is one page that answers "where can I sit at 2pm in Chifley?"
-in a single glance and books it in one step.
+picking a library, then clicking through rooms to find a free hour. What
+should exist instead is one page that answers "where can I sit at 2pm in
+Chifley?" in a single glance, and books it in one step.
 
 Good, for this app, means:
 
@@ -47,7 +54,10 @@ Good, for this app, means:
 - **Honest refusals.** Every refused booking says why in plain English and
   changes nothing.
 - **Works for everyone.** Every page works without JavaScript, by keyboard,
-  on a phone, and never says "free" or "taken" by colour alone.
+  on a phone, and never says "free" or "taken" by colour alone. Depth and
+  motion (the 3D library blocks, raised and pressed-in tiles, page
+  transitions) only reinforce what the words already say, and everything
+  holds still for anyone whose system asks for reduced motion.
 - **Private by default.** The grid says a room is Booked, never by whom; the
   live stream carries the slot, not the person.
 
@@ -65,8 +75,9 @@ is carried into that room's features.
 
 Real: the three library names, the 2-hour daily limit, the two-week window,
 the Chifley desks and booths, the Hancock basement room. Illustrative: every
-room number, capacity and equipment list, and the 08:00–22:00 hours (real
-opening hours vary by library and teaching period).
+room number, capacity and equipment list, the space counts that follow from
+them, and the 08:00–22:00 hours (real opening hours vary by library and
+teaching period).
 
 ### What I chose not to build
 
@@ -89,8 +100,9 @@ rules hold in Canberra time whatever the server's clock (`rules.test.ts`).
 
 Judgement, checked by hand in a browser: that the grid reads at a glance, that
 it works at 360px wide with no sideways page scroll, that the live update
-lands in a second open tab, and that keyboard focus is visible and starts at
-the skip link.
+lands in a second open tab, that keyboard focus is visible and starts at the
+skip link, and that the design stays calm: one accent colour, depth only where
+it carries meaning, motion that stops when asked.
 
 ## How it's built
 
@@ -101,4 +113,6 @@ and the seeded spaces are migrations applied at boot. A unique index on
 checked in the same transaction as the insert. Forms POST and the server
 answers with a redirect, so nothing needs JavaScript; a small script
 subscribes to a server-sent-events stream to keep an open grid live. The
-rules the agent was held to are in `CLAUDE.md`.
+interface is plain CSS: self-hosted Fraunces and Inter, 3D built from CSS
+transforms, and cross-document view transitions, with no front-end framework.
+The rules the agent was held to are in `CLAUDE.md`.

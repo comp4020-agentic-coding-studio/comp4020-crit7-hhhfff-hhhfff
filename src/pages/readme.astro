@@ -7,8 +7,32 @@ import Layout from "../layouts/Layout.astro";
 // README images are committed to public/ and linked relatively (public/x.png)
 // so they render on GitHub; here they're served from the site root.
 const html = (await readme.compiledContent()).replace(/(src|href)="public\//g, '$1="/');
+
+// Laid out as an editorial page without changing a word or its order: the
+// title and opening paragraph sit on the dark band, the rest of the intro
+// (link, key facts, screenshot) opens the sheet, and each ## section becomes
+// a numbered block whose ### parts are cards. Only markup is added, so the
+// page's text is still exactly the README's text, in order.
+const title = html.match(/<h1[^>]*>[\s\S]*?<\/h1>/)?.[0] ?? "";
+const afterTitle = html.slice(html.indexOf(title) + title.length);
+const opening = afterTitle.match(/<p>[\s\S]*?<\/p>/)?.[0] ?? "";
+const rest = afterTitle.slice(afterTitle.indexOf(opening) + opening.length);
+const [intro, ...sections] = rest.split(/(?=<h2)/);
+
+const section = (chunk: string) => {
+  const id = chunk.match(/<h2 id="([^"]+)"/)?.[1] ?? "section";
+  const [head, ...parts] = chunk.split(/(?=<h3)/);
+  const h2 = head.match(/<h2[\s\S]*?<\/h2>/)?.[0] ?? "";
+  const cards = parts.length ? `<div class="subs">${parts.map((p) => `<div class="sub">${p}</div>`).join("")}</div>` : "";
+  return `<section class="about-sec sec-${id}">${h2}<div class="sec-body">${head.slice(h2.length)}${cards}</div></section>`;
+};
+const body = `<div class="about-intro">${intro}</div>${sections.map(section).join("")}`;
 ---
 
 <Layout title="About">
-  <article set:html={html} />
+  <Fragment slot="head">
+    <p class="eyebrow">About this service</p>
+    <Fragment set:html={title + opening.replace("<p>", '<p class="lede">')} />
+  </Fragment>
+  <article class="about" set:html={body} />
 </Layout>

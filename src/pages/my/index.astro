@@ -20,13 +20,32 @@ const justBooked = mine.find((b) => b.id === booked);
 ---
 
 <Layout title="My bookings">
-  <h1>My bookings</h1>
+  <Fragment slot="head">
+    <p class="eyebrow">Your hours</p>
+    <h1>My bookings</h1>
+    <p class="lede">
+      Upcoming bookings for your uID. Cancel any you no longer need so someone else can use the space.
+    </p>
+  </Fragment>
   {
     justBooked && (
-      <p class="notice ok" role="status">
-        <strong>Booked.</strong> {justBooked.space.name}, {justBooked.space.library} Library,{" "}
-        {formatDate(justBooked.date)} at {formatHour(justBooked.hour)}.
-      </p>
+      <div class="ticket" role="status">
+        {/* the back face is what the card flips from; decoration only */}
+        <div class="ticket-back" aria-hidden="true">
+          <span class="ticket-seal">✓</span>
+        </div>
+        <div class="ticket-front">
+          <p class="ticket-label">
+            <span aria-hidden="true">✓</span> <strong>Booked.</strong>
+          </p>
+          <p class="ticket-when">
+            {formatDate(justBooked.date)}, {formatHour(justBooked.hour)}–{formatHour(justBooked.hour + 1)}
+          </p>
+          <p class="ticket-where">
+            {justBooked.space.name}, {justBooked.space.library} Library
+          </p>
+        </div>
+      </div>
     )
   }
   {
@@ -52,16 +71,20 @@ const justBooked = mine.find((b) => b.id === booked);
 
   {
     !known ? (
-      <p>Enter your uID to see your bookings.</p>
+      <p class="empty">Enter your uID to see your bookings.</p>
     ) : mine.length === 0 ? (
-      <p>
+      <p class="empty">
         No upcoming bookings for {uid}. <a href="/">Find a space</a>.
       </p>
     ) : (
       <ul class="bookings">
-        {mine.map((b) => (
-          <li>
-            <div>
+        {mine.map((b, i) => (
+          <li style={`--i: ${i}`}>
+            <div class="booking-when" aria-hidden="true">
+              <span class="booking-hour">{formatHour(b.hour)}</span>
+              <span class="booking-day">{formatDate(b.date)}</span>
+            </div>
+            <div class="booking-what">
               <strong>
                 {formatDate(b.date)}, {formatHour(b.hour)}–{formatHour(b.hour + 1)}
               </strong>
@@ -72,7 +95,10 @@ const justBooked = mine.find((b) => b.id === booked);
             <form method="post" action="/api/cancel">
               <input type="hidden" name="id" value={b.id} />
               <input type="hidden" name="uid" value={uid} />
-              <button aria-label={`Cancel ${b.space.name} on ${formatDate(b.date)} at ${formatHour(b.hour)}`}>
+              <button
+                class="quiet"
+                aria-label={`Cancel ${b.space.name} on ${formatDate(b.date)} at ${formatHour(b.hour)}`}
+              >
                 Cancel
               </button>
             </form>
